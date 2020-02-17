@@ -11,16 +11,61 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @sort = params[:sort]
+    # session.clear
     
+    if(!params.has_key?(:sort) && !params.has_key?(:ratings))
+      if(session.has_key?(:sort))
+          if(session.has_key?(:ratings))
+            redirect_to movies_path(:sort=>session[:sort], :ratings=>session[:ratings])
+          else
+            redirect_to movies_path(:sort=>session[:sort])
+          end
+      else
+        if(session.has_key?(:ratings))
+          redirect_to movies_path(:ratings=>session[:ratings])
+        end
+          
+      end
+    end
+    # @sort = params[:sort]
+    # if(@sort == nil && session.has_key?(:sort))
+    #   @sort = session[:sort]
+    # end
+      
+    @sort = params.has_key?(:sort) ? (session[:sort] = params[:sort]) : session[:sort]
     @all_ratings = Movie.all_ratings.keys
+    @select_rating = params[:ratings] || session[:ratings]||{}
+    if @select_rating == {}
+      @select_rating = Hash[Movie.all_ratings.map {|rating| [rating,rating]}]
+    end
     @ratings = params[:ratings]
     if(@ratings != nil)
       ratings = @ratings.keys
-      @movies = Movie.where(rating: ratings).order(@sort)
+      session[:ratings] = @ratings
+      # @movies = Movie.where(rating: ratings).order(@sort)
     else
-      @movies = Movie.order(@sort)
+      if(!params.has_key?(:commit) && !params.has_key?(:sort))
+        ratings = Movie.all_ratings.keys
+        session[:ratings] = Movie.all_ratings
+      else
+        ratings = session[:ratings]
+      end
+      # if session[:ratings] == nil
+      #   @movies = Movie.order(@sort)
+      # else
+      #   ratings = session[:ratings]
+      #   @movies = Movie.where(rating: ratings).order(@sort)
+      # end
+    
+    
+    # if params[:sort] != session[:sort] or params[:ratings] != session[:ratings]
+    #   session[:sort] = @sort
+    #   session[:ratings] = @ratings
+    #   redirect_to :sort=>session[:sort], :ratings=>session[:ratings] and return
+    # end
+    
     end
+  @movies = Movie.where(rating: @select_rating.keys).order(@sort)
     
   end
 
